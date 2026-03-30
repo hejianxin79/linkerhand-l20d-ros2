@@ -1,17 +1,17 @@
 <img  src="resource/logo.png" width="800">
 
-# LinkerHand灵巧手ROS2 SDK For R20
+# LinkerHand灵巧手ROS2 SDK For L20D
 
 # 1. **概述**
-LinkerHand灵巧手ROS SDK 是灵心巧手(北京)科技有限公司开发，用于R20等LinkerHand灵巧手的驱动软件和功能示例源码。可用于真机与仿真器使用。
+LinkerHand灵巧手ROS SDK 是灵心巧手(北京)科技有限公司开发，用于L20D等LinkerHand灵巧手的驱动软件和功能示例源码。可用于真机与仿真器使用。
 LinkerHandROS2 SDK当前支持Ubuntu22.04 ROS humble Python3.10 及以上环境
 
 
 
 | Name | Version | Link |
 | --- | --- | --- |
-| Python SDK | ![SDK Version](https://img.shields.io/badge/SDK%20Version-V3.0.1-brightgreen?style=flat-square) ![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white) ![Windows 11](https://img.shields.io/badge/OS-Windows%2011-0078D4?style=flat-square&logo=windows&logoColor=white) ![Ubuntu 20.04+](https://img.shields.io/badge/OS-Ubuntu%2020.04%2B-E95420?style=flat-square&logo=ubuntu&logoColor=white) | [![GitHub 仓库](https://img.shields.io/badge/GitHub-grey?logo=github&style=flat-square)](https://github.com/linker-bot/linker-hand-r20-ros2.git) |
-| ROS2 SDK | ![SDK Version](https://img.shields.io/badge/SDK%20Version-V3.0.1-brightgreen?style=flat-square) ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white) ![Ubuntu 24.04](https://img.shields.io/badge/OS-Ubuntu%2024.04-E95420?style=flat-square&logo=ubuntu&logoColor=white) ![ROS 2 Jazzy](https://img.shields.io/badge/ROS%202-Jazzy-00B3E6?style=flat-square&logo=ros) ![Windows 11](https://img.shields.io/badge/OS-Windows%2011-0078D4?style=flat-square&logo=windows&logoColor=white) | [![GitHub 仓库](https://img.shields.io/badge/GitHub-grey?logo=github&style=flat-square)](https://github.com/linker-bot/linker-hand-r20-ros2.git) |
+| Python SDK | ![SDK Version](https://img.shields.io/badge/SDK%20Version-V3.0.1-brightgreen?style=flat-square) ![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white) ![Windows 11](https://img.shields.io/badge/OS-Windows%2011-0078D4?style=flat-square&logo=windows&logoColor=white) ![Ubuntu 20.04+](https://img.shields.io/badge/OS-Ubuntu%2020.04%2B-E95420?style=flat-square&logo=ubuntu&logoColor=white) | [![GitHub 仓库](https://img.shields.io/badge/GitHub-grey?logo=github&style=flat-square)](https://github.com/linker-bot/linker-hand-L20D-ros2.git) |
+| ROS2 SDK | ![SDK Version](https://img.shields.io/badge/SDK%20Version-V3.0.1-brightgreen?style=flat-square) ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white) ![Ubuntu 24.04](https://img.shields.io/badge/OS-Ubuntu%2024.04-E95420?style=flat-square&logo=ubuntu&logoColor=white) ![ROS 2 Jazzy](https://img.shields.io/badge/ROS%202-Jazzy-00B3E6?style=flat-square&logo=ros) ![Windows 11](https://img.shields.io/badge/OS-Windows%2011-0078D4?style=flat-square&logo=windows&logoColor=white) | [![GitHub 仓库](https://img.shields.io/badge/GitHub-grey?logo=github&style=flat-square)](https://github.com/linker-bot/linker-hand-L20D-ros2.git) |
 
 
 # 2. **警告**
@@ -25,7 +25,7 @@ LinkerHandROS2 SDK当前支持Ubuntu22.04 ROS humble Python3.10 及以上环境
 # 3. **版本说明**
 
 V1.0.0
-1. 支持R20版Linker Hand ROS2
+1. 支持L20D版Linker Hand ROS2
 2. GUI控制界面，带有手指舞动作
 3. WIN Python Demo示例 
 
@@ -81,34 +81,42 @@ $ sudo udevadm trigger
 ## 4.2 下载
 
 ```bash
-$ mkdir -p linker_hand_r20_ros2/src    #创建目录
-$ cd linker_hand_r20_ros2/src    #进入目录
-$ git clone https://github.com/linker-bot/linker-hand-r20-ros2.git
+$ mkdir -p Linker_Hand_L20D_ROS2_SDK/src    #创建目录
+$ cd Linker_Hand_L20D_ROS2_SDK/src    #进入目录
+$ git clone https://github.com/linker-bot/linkerhand-l20d-ros2.git
 ```
 
 ## 4.3 安装依赖与编译
 
 ```bash
-$ cd linker_hand_r20_ros2/src/linker_hand_r20_ros2    #进入目录
+$ cd linker_hand_l20d_ros2    #进入目录
 $ pip install -r requirements.txt    #安装所需依赖
-$ cd linker_hand_r20_ros2 # 回到工程目录
+$ cd Linker_Hand_L20D_ROS2_SDK # 回到工程目录
 $ colcon build --symlink-install    #编译和构建ROS包
 ```
 
 # 5 启动SDK
+- 修改src/linker_hand_l20d_ros2_sdk/launch/linker_hand_l20d.launch.py文件，按照文件内参数说明进行修改
 ```bash
-$ cd linker_hand_r20_ros2
+$ cd Linker_Hand_L20D_ROS2_SDK
 $ source ./install/setup.bash
-$ ros2 run linker_hand_r20_ros2_sdk linker_hand_r20_ros2_sdk
+$ ros2 launch linker_hand_l20d_ros2_sdk linker_hand_l20d.launch.py
 $ # 显示一下信息则连接成功
-$ [INFO] [1769408666.004287900] [linker_hand_r20]: Linker Hand R20 ROS2 SDK 连接成功
+$ [linker_hand_l20d-1] [INFO] [1774851114.083196365] [linker_hand_l20d]: 正在初始化...
+$ [linker_hand_l20d-1]                                   Linker Hand
+$ [linker_hand_l20d-1] ╭────────────┬─────────────┬────────────┬─────────────┬───────────┬────────────╮
+$ [linker_hand_l20d-1] │ product_m… │ serial_num… │ software_… │ hardware_v… │ hand_type │ unique_id  │
+$ [linker_hand_l20d-1] ├────────────┼─────────────┼────────────┼─────────────┼───────────┼────────────┤
+$ [linker_hand_l20d-1] │    L20D    │ LHL20D-010… │   1.1.0    │    1.0.0    │   left    │ 2A0037000… │
+$ [linker_hand_l20d-1] ╰────────────┴─────────────┴────────────┴─────────────┴───────────┴────────────╯
+$ [linker_hand_l20d-1] [INFO] [1774851116.377002867] [linker_hand_l20d]: Linker Hand 连接成功！
 $ ........
 ```
-## 5.1启动GUI控制R20灵巧手
+## 5.1启动GUI控制L20D灵巧手
  - 启动SDK后，新开一个终端。注:由于有界面，不能使用ssh远程连接开启GUI 或者使用X11 终端
  - 修改gui_control/launch/gui_control.launch.py 按照参数说明，修改左手 or 右手
 ```bash
-$ cd linker_hand_r20_ros2
+$ cd linker_hand_L20D_ros2
 $ source ./install/setup.bash
 $ ros2 launch gui_control gui_control.launch.py
 ```
@@ -128,4 +136,4 @@ $ ros2 launch gui_control gui_control.launch.py
 
 
 ## 7 WIN上位机使用方法
- - 接通电源，USB转CANFD插在WIN11上位机下直接运行"R20灵巧手控制系统for win.exe"即可
+ - 接通电源，USB转CANFD插在WIN11上位机下直接运行"L20D灵巧手控制系统for win.exe"即可

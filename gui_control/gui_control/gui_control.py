@@ -41,8 +41,8 @@ class ROS2NodeManager(QObject):
             self.node = Node(node_name)
             
             # 声明参数
-            self.node.declare_parameter('hand_type', 'right')
-            self.node.declare_parameter('hand_joint', 'R20')
+            self.node.declare_parameter('hand_type', 'left')
+            self.node.declare_parameter('hand_joint', 'L10')
             self.node.declare_parameter('topic_hz', 30)
             self.node.declare_parameter('is_arc', False)
             
@@ -102,7 +102,31 @@ class ROS2NodeManager(QObject):
                 
             self.publisher.publish(self.joint_state)
             if self.is_arc == True:
-                pass
+                if self.hand_joint == "O6":
+                    if self.hand_type == "left":
+                        pose = range_to_arc_left(positions,self.hand_joint)
+                    elif self.hand_type == "right":
+                        pose = range_to_arc_right(positions,self.hand_joint)
+                elif self.hand_joint == "L7" or self.hand_joint == "L21" or self.hand_joint == "L25":
+                    if self.hand_type == "left":
+                        pose = range_to_arc_left(positions,self.hand_joint)
+                    elif self.hand_type == "right":
+                        pose = range_to_arc_right(positions,self.hand_joint)
+                elif self.hand_joint == "L10":
+                    if self.hand_type == "left":
+                        pose = range_to_arc_left_10(positions)
+                    elif self.hand_type == "right":
+                        pose = range_to_arc_right_10(positions)
+                elif self.hand_joint == "L20":
+                    if self.hand_type == "left":
+                        pose = range_to_arc_left_l20(positions)
+                    elif self.hand_type == "right":
+                        pose = range_to_arc_right_l20(positions)
+                else:
+                    #print(f"当前{self.hand_joint} {self.hand_type}不支持弧度转换", flush=True)
+                    pass
+                self.joint_state.position = [float(pos) for pos in pose]
+                self.publisher_arc.publish(self.joint_state)
             self.status_updated.emit("info", "关节状态已发布")
         except Exception as e:
             self.status_updated.emit("error", f"发布失败: {str(e)}")
