@@ -20,6 +20,7 @@ class LinkerHandL20D(Node):
         # 声明参数（带默认值）
         self.declare_parameter('hand_type', 'left')
         self.declare_parameter('hand_joint', 'L20D')
+        self.declare_parameter('canfd_device', 0)
         self.declare_parameter('is_touch', False)
        
 
@@ -27,6 +28,7 @@ class LinkerHandL20D(Node):
         self.hand_type = self.get_parameter('hand_type').value
         self.hand_joint = self.get_parameter('hand_joint').value
         self.is_touch = self.get_parameter('is_touch').value
+        self.canfd_device = self.get_parameter('canfd_device').value
         # ros时间获取
         self.stamp_clock = Clock()
         self.info_dic = {
@@ -34,10 +36,10 @@ class LinkerHandL20D(Node):
                 "current_current": [-1] * 20,
                 "error_status": [-1] * 20,
             }
-        self.ctl = LinkerHandL20DController(hand_type=self.hand_type)
+        self.ctl = LinkerHandL20DController(hand_type=self.hand_type, canfd_device=self.canfd_device)
+        
         self._init_hand()
-        
-        
+        time.sleep(0.1)
         self.run_thread = threading.Thread(target=self._run, daemon=True)
         self.run_thread.start()
         if self.ctl.comm.is_connected:
@@ -55,6 +57,7 @@ class LinkerHandL20D(Node):
         self.ctl.start_monitoring() # 开启监听线程
         time.sleep(0.1)
         device_info = self.ctl.read_serial_number()
+        time.sleep(0.1)
         self.out_info(info_dic=device_info)
         self.hand_cmd_sub = self.create_subscription(JointState, f'/cb_{self.hand_type}_hand_control_cmd', self.hand_control_cb,10)
         self.hand_state_pub = self.create_publisher(JointState, f'/cb_{self.hand_type}_hand_state',10)
@@ -183,7 +186,6 @@ class LinkerHandL20D(Node):
             self.hand_state_pub.publish(state_range_msg)
             self.hand_state_arc_pub.publish(state_angle_msg)
             self.hand_info_pub.publish(info_msg)
-            
             if self.is_touch == True:
                 # 获取当前的 ROS 时间
                 current_time = self.stamp_clock.now()
@@ -279,6 +281,13 @@ class LinkerHandL20D(Node):
 
         table.add_row(str(info_dic["product_model"]), str(info_dic["serial_number"]), str(info_dic["software_version"]),str(info_dic["hardware_version"]),str(self.hand_type),str(info_dic["unique_id"]))
         console.print(table)
+    
+    def close(self):
+        self.ctl.disconnect()
+        self.ctl.close()
+
+        self.destroy_node()
+        rclpy.shutdown()
 
 def main(args=None):
     rclpy.init(args=args)
@@ -288,8 +297,11 @@ def main(args=None):
         rclpy.spin(node)         # 主循环，监听 ROS 回调
     except KeyboardInterrupt:
         print("收到 Ctrl+C，准备退出...")
+        node.close()
     finally:      # 关闭 CAN 或其他硬件资源
         #node.close()
         #node.destroy_node()      # 销毁 ROS 节点
         #rclpy.shutdown()         # 关闭 ROS
+        node.close()
         print("程序已退出。")
+

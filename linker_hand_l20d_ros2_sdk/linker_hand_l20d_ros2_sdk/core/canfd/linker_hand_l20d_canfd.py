@@ -171,11 +171,15 @@ JOINT_DEFINITIONS = [
 class CANFDCommunication:
     """CANFD通信类"""
 
-    def __init__(self,hand_type="right"):
+    def __init__(self,hand_type="right", canfd_device=0):
         self.hand_type=hand_type
         self.canDLL = None
         self.channel = 0
-        self.device_id = DeviceID.RIGHT_HAND.value
+        self.canfd_device = canfd_device
+        if self.hand_type == "left":
+            self.device_id = DeviceID.LEFT_HAND.value
+        else:
+            self.device_id = DeviceID.RIGHT_HAND.value
         self.is_connected = False
         self.dlc2len = [0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64]
 
@@ -189,13 +193,11 @@ class CANFDCommunication:
             print("=" * 50)
             print("开始扫描CANFD设备...")
             start_time = time.time()
-
             try:
                 ret = self.canDLL.CAN_ScanDevice()
                 scan_time = time.time() - start_time
 
                 print(f"扫描完成: 找到 {ret} 个设备 (耗时: {scan_time:.3f}s)")
-
                 if ret <= 0:
                     print("❌ 错误: 未找到CANFD设备")
                     print("   请检查:")
@@ -212,11 +214,15 @@ class CANFDCommunication:
                 return False
 
             # 打开设备（添加超时控制）
-            print(f"正在打开CANFD设备通道 {self.channel}...")
+            print(f"正在打开CANFD-{self.canfd_device}号设备通道 {self.channel}...")
             start_time = time.time()
 
             try:
-                ret = self.canDLL.CAN_OpenDevice(0, self.channel)
+                ret = self.canDLL.CAN_OpenDevice(self.canfd_device, self.channel)
+                # a = self.canDLL.CAN_GetDevID(0, self.channel)
+                # print("_-" * 30)
+                # print(a)
+                # return
                 open_time = time.time() - start_time
 
                 if ret != STATUS_OK:
@@ -227,16 +233,13 @@ class CANFDCommunication:
                     print(f"   3. 设备权限不足")
                     return False
                 else:
-                    print(f"✅ 设备通道 {self.channel} 打开成功 (耗时: {open_time:.3f}s)")
-
+                    print(f"✅ CANFD-{self.canfd_device}号设备通道 {self.channel} 打开成功 (耗时: {open_time:.3f}s)")
             except Exception as e:
                 open_time = time.time() - start_time
                 print(f"❌ 打开设备异常 (耗时: {open_time:.3f}s): {e}")
                 return False
-
             # 读取设备信息
             self._read_device_info()
-
             # 配置CANFD参数
             print("正在配置CANFD参数...")
             print("  仲裁段波特率: 1Mbps")
@@ -262,13 +265,12 @@ class CANFDCommunication:
                     0x1       # Cantype: CANFD类型
                 )
 
-                ret = self.canDLL.CANFD_Init(0, self.channel, byref(can_config))
+                ret = self.canDLL.CANFD_Init(self.canfd_device, self.channel, byref(can_config))
                 config_time = time.time() - start_time
-
                 if ret != STATUS_OK:
                     print(f"❌ CANFD初始化失败，错误码: {ret} (耗时: {config_time:.3f}s)")
                     print("   正在关闭设备...")
-                    self.canDLL.CAN_CloseDevice(0, self.channel)
+                    self.canDLL.CAN_CloseDevice(self.canfd_device, self.channel)
                     return False
                 else:
                     print(f"✅ CANFD配置成功 (耗时: {config_time:.3f}s)")
@@ -277,23 +279,22 @@ class CANFDCommunication:
                 config_time = time.time() - start_time
                 print(f"❌ CANFD配置异常 (耗时: {config_time:.3f}s): {e}")
                 try:
-                    self.canDLL.CAN_CloseDevice(0, self.channel)
+                    self.canDLL.CAN_CloseDevice(self.canfd_device, self.channel)
                 except:
                     pass
                 return False
-
             # 设置接收过滤器（接收所有消息）
             print("正在设置接收过滤器...")
             start_time = time.time()
 
             try:
-                ret = self.canDLL.CAN_SetFilter(self.channel, 0, 0, 0, 0, 1)
+                ret = self.canDLL.CAN_SetFilter(self.canfd_device,self.channel, 0, 0, 0, 0, 1)
                 filter_time = time.time() - start_time
 
                 if ret != STATUS_OK:
                     print(f"❌ 设置过滤器失败，错误码: {ret} (耗时: {filter_time:.3f}s)")
                     print("   正在关闭设备...")
-                    self.canDLL.CAN_CloseDevice(self.channel)
+                    self.canDLL.CAN_CloseDevice(self.canfd_device,self.channel)
                     return False
                 else:
                     print(f"✅ 过滤器设置成功 (耗时: {filter_time:.3f}s)")
@@ -302,7 +303,7 @@ class CANFDCommunication:
                 filter_time = time.time() - start_time
                 print(f"❌ 设置过滤器异常 (耗时: {filter_time:.3f}s): {e}")
                 try:
-                    self.canDLL.CAN_CloseDevice(self.channel)
+                    self.canDLL.CAN_CloseDevice(self.canfd_device, self.channel)
                 except:
                     pass
                 return False
@@ -322,6 +323,7 @@ class CANFDCommunication:
         except Exception as e:
             print(f"CANFD初始化失败: {e}")
             return False
+        
 
     def query_device_type(self) -> Optional[str]:
         """查询设备类型（左手/右手）"""
@@ -336,6 +338,7 @@ class CANFDCommunication:
         if self.hand_type == "right":
             print("   查询右手设备 (ID: 0x01)...")
             right_hand_response = self._query_single_device(DeviceID.RIGHT_HAND.value)
+        
         if self.hand_type == "left":
             # 尝试查询左手设备
             print("   查询左手设备 (ID: 0x02)...")
@@ -367,10 +370,9 @@ class CANFDCommunication:
                 # 临时设置设备ID用于发送
                 original_device_id = self.device_id
                 self.device_id = device_id
-
                 # 发送设备信息查询命令
                 success = self.send_message(RegisterAddress.SYS_DEVICE_INFO.value, b'', False)
-
+                
                 # 恢复原始设备ID
                 self.device_id = original_device_id
 
@@ -381,10 +383,9 @@ class CANFDCommunication:
                 # 等待响应
                 import time
                 time.sleep(0.1)  # 100ms等待
-
                 # 接收响应 - 不过滤设备ID，接收所有消息
                 messages = self.receive_messages(200, filter_device_id=False)
-
+                
                 # 检查是否有来自目标设备的响应
                 for frame_id, data in messages:
                     response_device_id = (frame_id >> 21) & 0xFF
@@ -442,7 +443,8 @@ class CANFDCommunication:
         """读取并显示设备信息"""
         try:
             devinfo = Dev_Info()
-            ret = self.canDLL.CAN_ReadDevInfo(self.channel, byref(devinfo))
+            
+            ret = self.canDLL.CAN_ReadDevInfo(self.canfd_device, byref(devinfo))
             if ret == STATUS_OK:
                 print("\n设备信息:")
                 print(f"  设备型号: {devinfo.HW_Type.decode('utf-8', errors='ignore').strip()}")
@@ -543,7 +545,9 @@ class CANFDCommunication:
             except Exception:
                 sent_data_preview = bytes(data_array[:])
             print(f"     调试: 发送帧 -> ID:0x{frame_id:08X}, DLC:{dlc}, 数据预览:{sent_data_preview.hex().upper()}")
-            ret = self.canDLL.CANFD_Transmit(0, self.channel, byref(msg), 1, 200)
+            
+            ret = self.canDLL.CANFD_Transmit(self.canfd_device, self.channel,  byref(msg), 1, 200)
+            
             print(f"     调试: CANFD_Transmit 返回: {ret}")
             if ret >= 1:
                 # 根据寄存器类型显示不同的详细信息
@@ -589,6 +593,7 @@ class CANFDCommunication:
                     print(f"        数据长度: {data_len}字节")
                     if data_len > 0:
                         print(f"        数据内容: {data.hex().upper()}")
+                
                 return True
             elif ret < 0:
                 print(f"     ❌ 发送失败:")
@@ -596,7 +601,7 @@ class CANFDCommunication:
                 print(f"        返回值: {ret}")
                 print(f"        数据长度: {data_len}字节")
                 return False
-
+            
         except Exception as e:
             print(f"发送消息异常: {e}")
             return False
@@ -643,18 +648,20 @@ class CANFDCommunication:
             from ctypes import POINTER
             class CanFD_Msg_ARRAY(Structure):
                 _fields_ = [('SIZE', c_uint16), ('STRUCT_ARRAY', POINTER(CanFD_Msg))]
-                def __init__(self, num_of_structs):
-                    self.STRUCT_ARRAY = cast((CanFD_Msg * num_of_structs)(), POINTER(CanFD_Msg))
-                    self.SIZE = num_of_structs
-                    self.ADDR = self.STRUCT_ARRAY[0]
 
-            # 每次读取1000条
+                def __init__(self, num_of_structs):
+                    # 创建 ctypes 数组
+                    self._array = (CanFD_Msg * num_of_structs)()
+                    self.STRUCT_ARRAY = cast(pointer(self._array), POINTER(CanFD_Msg))
+                    self.SIZE = num_of_structs
+
             receive_buffer = CanFD_Msg_ARRAY(1000)
-            
+
             total_flushed = 0
             while True:
                 # 0ms超时，非阻塞读取
-                ret = self.canDLL.CANFD_Receive(0, self.channel, byref(receive_buffer.ADDR), 1000, 0)
+                ret = self.canDLL.CANFD_Receive(self.canfd_device, self.channel, byref(receive_buffer), 1000, 0)
+                
                 if ret <= 0:
                     break
                 total_flushed += ret
@@ -690,7 +697,7 @@ class CANFDCommunication:
             receive_buffer = CanFD_Msg_ARRAY(2000)
 
             # 接收消息
-            ret = self.canDLL.CANFD_Receive(0, self.channel, byref(receive_buffer.ADDR), 2000, timeout_ms)
+            ret = self.canDLL.CANFD_Receive(self.canfd_device, self.channel, byref(receive_buffer.ADDR), 2000, timeout_ms)
 
             messages = []
             if ret > 0:
@@ -733,7 +740,7 @@ class CANFDCommunication:
         if self.canDLL and self.is_connected:
             try:
                 print("关闭CANFD连接...")
-                self.canDLL.CAN_CloseDevice(self.channel)
+                self.canDLL.CAN_CloseDevice(self.canfd_device, self.channel)
                 print("CANFD连接已关闭")
             except Exception as e:
                 print(f"关闭CANFD连接失败: {e}")
@@ -890,8 +897,8 @@ class DexterousHandModel:
 class LinkerHandL20DController:
     """灵巧手控制器"""
 
-    def __init__(self,hand_type="right"):
-        self.comm = CANFDCommunication(hand_type=hand_type)
+    def __init__(self,hand_type="right", canfd_device=0):
+        self.comm = CANFDCommunication(hand_type=hand_type, canfd_device=canfd_device)
         self.model = DexterousHandModel()
         self.is_running = False
         self.update_thread = None
@@ -921,7 +928,6 @@ class LinkerHandL20DController:
             if not result:
                 print("❌ CANFD通信初始化失败")
                 return False, None
-
             # 查询设备类型
             device_type = self.comm.query_device_type()
             if device_type:

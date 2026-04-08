@@ -137,3 +137,111 @@ $ ros2 launch gui_control gui_control.launch.py
 
 ## 7 WIN上位机使用方法
  - 接通电源，USB转CANFD插在WIN11上位机下直接运行"L20D灵巧手控制系统for win.exe"即可
+
+
+
+## L20D左右双手使用
+ - 将两个CANFD设备插入USB上。终端查看两个设备是否存在
+```bash
+$ lsusb
+$ Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+$ Bus 001 Device 002: ID 048d:5702 Integrated Technology Express, Inc. RGB LED Controller
+$ Bus 001 Device 003: ID a8fa:8598 Com Equipment CANFD Analyser
+$ Bus 001 Device 004: ID 05e3:0608 Genesys Logic, Inc. Hub
+$ Bus 001 Device 005: ID 8087:0aaa Intel Corp. Bluetooth 9460/9560 Jefferson Peak (JfP)
+$ Bus 001 Device 006: ID a8fa:8598 Com Equipment CANFD Analyser
+$ Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+# 可以看到两个CANFD设备
+```
+ - 查看CANFD设备详细信息
+```bash
+$ lsusb -v -d a8fa:8598
+Bus 001 Device 003: ID a8fa:8598 Com Equipment CANFD Analyser
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass            0 [unknown]
+  bDeviceSubClass         0 [unknown]
+  bDeviceProtocol         0
+  bMaxPacketSize0        64
+  idVendor           0xa8fa Com Equipment
+  idProduct          0x8598 CANFD Analyser
+  bcdDevice            3.00
+  iManufacturer           1 Com Equipment
+  iProduct                2 CANFD Analyser
+  iSerial                 3 F0802061329D3641
+......
+Bus 001 Device 006: ID a8fa:8598 Com Equipment CANFD Analyser
+Couldn't open device, some information will be missing
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass            0 [unknown]
+  bDeviceSubClass         0 [unknown]
+  bDeviceProtocol         0
+  bMaxPacketSize0        64
+  idVendor           0xa8fa Com Equipment
+  idProduct          0x8598 CANFD Analyser
+  bcdDevice            3.00
+  iManufacturer           1 Com Equipment
+  iProduct                2 CANFD Analyser
+  iSerial                 3 F080205B34AB4B31
+# 可以查看到两个CANFD的iSerial序列号
+```
+ - 修改99-double-canfd.rules
+```bash
+# 设备 1 (F0802061329D3641) 左手
+SUBSYSTEM=="usb", ATTRS{idVendor}=="a8fa", ATTRS{idProduct}=="8598", ATTRS{serial}=="左手iSerial序列号", MODE="0666", GROUP="plugdev", SYMLINK+="L20D_LEFT"
+
+# 设备 2 (F080205B34AB4B31) 右手
+SUBSYSTEM=="usb", ATTRS{idVendor}=="a8fa", ATTRS{idProduct}=="8598", ATTRS{serial}=="右手iSerial序列号", MODE="0666", GROUP="plugdev", SYMLINK+="L20D_RIGHT"
+```
+ - 将99-double-canfd.rules复制到/etc/udev/rules.d/目录
+```bash
+$ sudo cp 99-double-canfd.rules /etc/udev/rules.d/99-double-canfd.rules
+$ sudo udevadm control --reload-rules
+$ sudo udevadm trigger
+```
+ - 查看是否配置成功
+```bash
+$ ls /dev
+# 查看是否有L20D_LEFT和L20D_RIGHT
+```
+ - 修改src/linker_hand_l20d_ros2_sdk/launch/linker_hand_l20d_double.launch.py文件，按照文件内参数说明进行修改.
+```bash
+$ cd Linker_Hand_L20D_ROS2_SDK/
+$ source ./install/setup.bash
+$ ros2 launch linker_hand_l20d_ros2_sdk linker_hand_l20d_double.launch.py
+$ [linker_hand_l20d-1] [INFO] [1775628433.836825414] [linker_hand_l20d_left]: 正在初始化...
+$ [linker_hand_l20d-2]                                   Linker Hand
+$ [linker_hand_l20d-2] ╭────────────┬─────────────┬────────────┬─────────────┬───────────┬────────────╮
+$ [linker_hand_l20d-2] │ product_m… │ serial_num… │ software_… │ hardware_v… │ hand_type │ unique_id  │
+$ [linker_hand_l20d-2] ├────────────┼─────────────┼────────────┼─────────────┼───────────┼────────────┤
+$ [linker_hand_l20d-2] │    R20     │ LR20-00-00… │     0      │     0.0     │   right   │ 4D0031000… │
+$ [linker_hand_l20d-2] ╰────────────┴─────────────┴────────────┴─────────────┴───────────┴────────────╯
+$ [linker_hand_l20d-1]                                   Linker Hand
+$ [linker_hand_l20d-1] ╭────────────┬─────────────┬────────────┬─────────────┬───────────┬────────────╮
+$ [linker_hand_l20d-1] │ product_m… │ serial_num… │ software_… │ hardware_v… │ hand_type │ unique_id  │
+$ [linker_hand_l20d-1] ├────────────┼─────────────┼────────────┼─────────────┼───────────┼────────────┤
+$ [linker_hand_l20d-1] │    L20D    │ LHL20D-010… │   2.0.6    │    1.1.0    │   left    │ 1F002E000… │
+$ [linker_hand_l20d-1] ╰────────────┴─────────────┴────────────┴─────────────┴───────────┴────────────╯
+$ [linker_hand_l20d-2] [INFO] [1775628435.797985553] [linker_hand_l20d_right]: Linker Hand 连接成功！
+$ [linker_hand_l20d-1] [INFO] [1775628436.197499722] [linker_hand_l20d_left]: Linker Hand 连接成功！
+```
+
+## Topic说明
+ - 新开一个终端，查看topic
+```bash
+$ /cb_left_hand_control_cmd       # 左手控制话题
+$ /cb_left_hand_info              # 左手当前温度、当前电流、当前电机错误信息
+$ /cb_left_hand_matrix_touch      # 左手指尖压力传感器
+$ /cb_left_hand_matrix_touch_mass # 左手指尖压力传感器和值
+$ /cb_left_hand_state             # 左手实时状态
+$ /cb_right_hand_control_cmd      # 右手控制话题
+$ /cb_right_hand_info              # 右手当前温度、当前电流、当前电机错误信息
+$ /cb_right_hand_matrix_touch      # 右手指尖压力传感器
+$ /cb_right_hand_matrix_touch_mass # 右手指尖压力传感器和值
+$ /cb_right_hand_state             # 右手实时状态
+```
